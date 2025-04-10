@@ -161,7 +161,7 @@ impl SimulationState {
             body.position.y += body.velocity.y * effective_time_step;
         }
         
-        // self.handle_collisions();
+        self.handle_collisions();
         
         self.elapsed_time += effective_time_step;
     }
@@ -234,7 +234,6 @@ impl SimulationState {
             self.bodies[j].velocity.x += vel_j.x;
             self.bodies[j].velocity.y += vel_j.y;
             
-            // Apply position corrections
             self.bodies[i].position.x += pos_i.x;
             self.bodies[i].position.y += pos_i.y;
             self.bodies[j].position.x += pos_j.x;

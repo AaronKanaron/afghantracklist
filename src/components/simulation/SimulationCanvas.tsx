@@ -61,6 +61,8 @@ export const SimulationCanvas: React.FC<SimulationCanvasProps> = ({ bodies, onBo
     });
     
     const animationRef = useRef<number | null>(null);
+    const resizeTimeoutRef = useRef<number | null>(null);
+    const isResizing = useRef<boolean>(false);
     
     const MIN_ZOOM = 0.1;  
     const MAX_ZOOM = 3.0;  
@@ -97,7 +99,7 @@ export const SimulationCanvas: React.FC<SimulationCanvasProps> = ({ bodies, onBo
     }, [bodies, trails]);
     
     const updateCamera = useCallback(() => {
-        if (!canvasRef.current) return;
+        if (!canvasRef.current || isResizing.current) return;
         
         const bounds = calculateBounds();
         if (!bounds) return;
@@ -126,6 +128,11 @@ export const SimulationCanvas: React.FC<SimulationCanvasProps> = ({ bodies, onBo
     }, [calculateBounds]);
     
     const animateCamera = useCallback(() => {
+        if (isResizing.current) {
+            animationRef.current = requestAnimationFrame(animateCamera);
+            return; 
+        }
+
         setCamera(prev => {
             const scale = prev.scale + (prev.targetScale - prev.scale) * CAMERA_SMOOTHING;
             const offsetX = prev.offsetX + (prev.targetOffsetX - prev.offsetX) * CAMERA_SMOOTHING;
@@ -153,11 +160,45 @@ export const SimulationCanvas: React.FC<SimulationCanvasProps> = ({ bodies, onBo
     }, [animateCamera]);
     
     useEffect(() => {
-        updateCamera();
+        if (!isResizing.current) {
+            updateCamera();
+        }
     }, [bodies, updateCamera]);
+
+    useEffect(() => {
+        const handleResize = () => {
+            isResizing.current = true;
+
+            if (resizeTimeoutRef.current) {
+                window.clearTimeout(resizeTimeoutRef.current);
+            }
+
+            resizeTimeoutRef.current = window.setTimeout(() => {
+                isResizing.current = false;
+                updateCamera();
+
+                if (canvasRef.current) {
+                    const canvas = canvasRef.current;
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        drawCanvas(ctx, canvas, bodies, trails, camera);
+                    }
+                }
+            }, 100);
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            if(resizeTimeoutRef.current) {
+                window.clearTimeout(resizeTimeoutRef.current);
+            }
+        };
+    }, [bodies, trails, camera, updateCamera])
     
     useEffect(() => {
-        if (!bodies || bodies.length === 0) return;
+        if (!bodies || bodies.length === 0 || isResizing.current) return;
         
         setTrails(prevTrails => {
             const trailMap = new Map<number, BodyTrail>();
@@ -180,6 +221,76 @@ export const SimulationCanvas: React.FC<SimulationCanvasProps> = ({ bodies, onBo
         });
     }, [bodies]);
 
+    const drawCanvas = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, bodies: Body[], trails: BodyTrail[], camera: CameraState) => {
+        const rect = canvas.getBoundingClientRect();
+
+        ctx.clearRect(0, 0, rect.width, rect.height);
+        ctx.save();
+
+        ctx.translate(rect.width / 2, rect.height / 2);
+        ctx.scale(camera.scale, camera.scale);
+        ctx.translate(camera.offsetX, camera.offsetY);
+
+        trails.forEach(trail => {
+            if (trail.positions.length < 2) return;
+
+            const step = isResizing ? Math.max(1, Math.floor(trail.positions.length / 30)) : 1;
+
+            for (let i = 0; i < trail.positions.length - step; i += step) {
+                ctx.beginPath();
+
+                const pos = trail.positions[i];
+                const nextPos = trail.positions[i + step];
+
+                // if (Math.abs(pos.x - nextPos.x) < 0.1 && Math.abs(pos.y - nextPos.y) < 0.1) continue;
+
+                const opacity = 0.1 + (i / trail.positions.length) * 0.9;
+
+                const hexColor = trail.color.replace('#', '');
+                const r = parseInt(hexColor.substring(0, 2), 16);
+                const g = parseInt(hexColor.substring(2, 4), 16);
+                const b = parseInt(hexColor.substring(4, 6), 16);
+
+                ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+                ctx.lineWidth = 2 / camera.scale;
+
+                ctx.moveTo(pos.x, pos.y);
+                ctx.lineTo(nextPos.x, nextPos.y);
+                ctx.stroke();
+            }
+        });
+
+        bodies.forEach(body => {
+            ctx.beginPath();
+            ctx.arc(body.position.x, body.position.y, body.radius, 0, Math.PI * 2);
+            ctx.fillStyle = body.color;
+            ctx.fill();
+
+            if(!isResizing.current) {
+                ctx.beginPath();
+                ctx.moveTo(body.position.x, body.position.y);
+                ctx.lineTo(
+                    body.position.x + body.velocity.x * 0.1,
+                    body.position.y + body.velocity.y * 0.1
+                );
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.lineWidth = 2 / camera.scale;
+                ctx.stroke();
+            }
+
+            ctx.font = `${12 / camera.scale}px Arial`;
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.fillText(
+                `${body.id}`, 
+                body.position.x, 
+                body.position.y - body.radius - (10 / camera.scale)
+            );
+        });
+
+        ctx.restore();
+    };
+
     useEffect(() => {
         if (!canvasRef.current || !bodies) return;
         
@@ -190,86 +301,26 @@ export const SimulationCanvas: React.FC<SimulationCanvasProps> = ({ bodies, onBo
         const dpr = window.devicePixelRatio || 1;
         const rect = canvas.getBoundingClientRect();
         
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
-        ctx.scale(dpr, dpr);
+        if (canvas.width !== rect.width * dpr || canvas.height !== rect.height * dpr) {
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
         
-        canvasStateRef.current = {
-            scaleFactor: dpr,
-            centerX: rect.width / 2,
-            centerY: rect.height / 2,
-            width: rect.width,
-            height: rect.height
-        };
+            canvasStateRef.current = {
+                scaleFactor: dpr,
+                centerX: rect.width / 2,
+                centerY: rect.height / 2,
+                width: rect.width,
+                height: rect.height
+            };
+        }
 
-        ctx.clearRect(0, 0, rect.width, rect.height);
-        
-        ctx.save();
-        ctx.translate(rect.width / 2, rect.height / 2); 
-        ctx.scale(camera.scale, camera.scale);          
-        ctx.translate(camera.offsetX, camera.offsetY);  
-
-        trails.forEach(trail => {
-            if (trail.positions.length < 2) return;
-            
-            ctx.beginPath();
-            
-            const firstPos = trail.positions[0];
-            ctx.moveTo(firstPos.x, firstPos.y);
-            
-            for (let i = 1; i < trail.positions.length; i++) {
-                const pos = trail.positions[i];
-                
-                const opacity = 0.1 + (i / trail.positions.length) * 0.9;
-                
-                const hexColor = trail.color.replace('#', '');
-                const r = parseInt(hexColor.substring(0, 2), 16);
-                const g = parseInt(hexColor.substring(2, 4), 16);
-                const b = parseInt(hexColor.substring(4, 6), 16);
-                
-                ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${opacity})`;
-                ctx.lineWidth = 2 / camera.scale;
-                
-                ctx.lineTo(pos.x, pos.y);
-                ctx.stroke();
-                
-                ctx.beginPath();
-                ctx.moveTo(pos.x, pos.y);
-            }
-        });
-
-        bodies.forEach(body => {
-            ctx.beginPath();
-            ctx.arc(body.position.x, body.position.y, body.radius, 0, Math.PI * 2);
-            ctx.fillStyle = body.color;
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.moveTo(body.position.x, body.position.y);
-            ctx.lineTo(
-                body.position.x + body.velocity.x * 0.1,
-                body.position.y + body.velocity.y * 0.1
-            );
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-            ctx.lineWidth = 2 / camera.scale;
-            ctx.stroke();
-            
-            ctx.font = `${12 / camera.scale}px Arial`;
-            ctx.fillStyle = 'white';
-            ctx.textAlign = 'center';
-            ctx.fillText(
-                `${body.id}`, 
-                body.position.x, 
-                body.position.y - body.radius - (10 / camera.scale)
-            );
-        });
-        
-        ctx.restore();
+        drawCanvas(ctx, canvas, bodies, trails, camera);
         
     }, [bodies, trails, camera]);
     
     const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>): void => {
-        if (!canvasRef.current || !bodies) return;
+        if (!canvasRef.current || !bodies || isResizing.current) return;
 
         const canvas = canvasRef.current;
         const rect = canvas.getBoundingClientRect();
