@@ -28,14 +28,14 @@ interface SimulationState {
   time_multiplier: number;
 }
 
-interface BodyUpdate {
-  position_x?: number;
-  position_y?: number;
-  velocity_x?: number;
-  velocity_y?: number;
-  mass?: number;
-  radius?: number;
-  color?: string;
+interface BodyUpdateParams {
+  mass: number;
+  radius: number;
+  position_x: number;
+  position_y: number;
+  velocity_x: number;
+  velocity_y: number;
+  color: string;
 }
 
 function App(): JSX.Element {
@@ -44,6 +44,7 @@ function App(): JSX.Element {
   const animationFrameId = useRef<number | null>(null);
   const lastUpdateTime = useRef<number>(0);
   const isUpdating = useRef<boolean>(false);
+  const manuallyUpdated = useRef<boolean>(false);
 
   // Initialize simulation
   useEffect(() => {
@@ -102,7 +103,15 @@ function App(): JSX.Element {
     
     try {
       await invoke('set_simulation_running', { running: !simState.is_running });
-      setSimState(prev => prev ? { ...prev, is_running: !prev.is_running } : null);
+      // After pausing, make sure we have the correct state in memory
+      if (simState.is_running) {
+        // If we're pausing, get the latest state
+        const state = await invoke<SimulationState>('get_simulation_state');
+        setSimState(state);
+      } else {
+        // If we're starting, just update the is_running flag
+        setSimState(prev => prev ? { ...prev, is_running: !prev.is_running } : null);
+      }
     } catch (error) {
       console.error("Error toggling simulation:", error);
     }
@@ -123,16 +132,41 @@ function App(): JSX.Element {
     setSelectedBodyId(id);
   };
 
-  const handleBodyUpdate = async (id: number, updates: BodyUpdate): Promise<void> => {
+  const handleBodyUpdate = async (id: number, updates: BodyUpdateParams): Promise<void> => {
+    if (!simState) return;
+    
     try {
+      // First ensure the simulation is paused
+      if (simState.is_running) {
+        await invoke('set_simulation_running', { running: false });
+      }
+
+      console.log("Updating body with ID:", id, "Updates:", updates);
+      
+      // Now update the body
       await invoke('update_body', {
         id,
-        ...updates
+        mass: updates.mass,
+        position_x: updates.position_x,
+        position_y: updates.position_y,
+        velocity_x: updates.velocity_x,
+        velocity_y: updates.velocity_y,
+        radius: updates.radius,
+        color: updates.color
       });
       
-      // Refresh the simulation state to reflect changes
+      manuallyUpdated.current = true;
+      
+      // Get the fresh state (which should include our updates)
       const state = await invoke<SimulationState>('get_simulation_state');
-      setSimState(state);
+      
+      // Apply the updated state to our React state
+      setSimState({
+        ...state,
+        is_running: false // Ensure it stays paused
+      });
+      
+      console.log("Body updated successfully");
     } catch (error) {
       console.error("Error updating body:", error);
     }

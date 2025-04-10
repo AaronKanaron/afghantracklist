@@ -43,49 +43,117 @@ pub struct SimulationState {
 
 impl SimulationState {
     pub fn new() -> Self {
-        // Setup a binary system with orbital velocities
-        // Using closer mass ratio to make both bodies orbit more visibly
-        let mass1 = 5.0e3;  // Reduced from 1.0e5
-        let mass2 = 1.0e3;  // Kept the same
-        let distance = 200.0;
-        
-        // Calculate positions to keep center of mass at origin
-        let total_mass = mass1 + mass2;
-        let pos1 = -distance * mass2 / total_mass;
-        let pos2 = distance * mass1 / total_mass;
-        
-        // Calculate orbital velocities
-        // For circular orbit: v = sqrt(G * M / r)
+        // Setup a system with multiple bodies
         let g = 6.67430e-1; // Our simulation gravity constant
         
-        // Use f64::sqrt() explicitly to avoid type ambiguity
-        let v1 = f64::sqrt(g * mass2 / distance) * mass2 / total_mass;
-        let v2 = f64::sqrt(g * mass1 / distance) * mass1 / total_mass;
+        // Create a more complex solar system with multiple bodies
+        let mut bodies = Vec::new();
         
-        // Increase velocities slightly for more obvious orbits
-        let velocity_factor = 1.2;
+        // Star (central body)
+        bodies.push(Body {
+            id: 1,
+            mass: 8.0e3,
+            position: Vec2::new(0.0, 0.0),
+            velocity: Vec2::new(0.0, 0.0),
+            radius: 25.0,
+            color: String::from("#ffcc00"),
+        });
+        
+        // Store the sun's mass to avoid borrowing issues
+        let sun_mass = 8.0e3;
+        
+        // Add planets at different distances
+        let planet_data = [
+            // Inner planet (like Mercury)
+            (1.0e3, 120.0, 10.0, "#ff9999"), 
+            // Medium planet (like Earth)
+            (1.5e3, 200.0, 12.0, "#3366ff"),
+            // Gas giant (like Jupiter)
+            (3.0e3, 350.0, 18.0, "#ff6600"),
+            // Outer planet (like Neptune)
+            (2.0e3, 450.0, 15.0, "#33ccff"),
+        ];
+        
+        for (i, (mass, distance, radius, color)) in planet_data.iter().enumerate() {
+            // Calculate orbital velocity for a circular orbit: v = sqrt(G * M / r)
+            let orbital_speed = f64::sqrt(g * sun_mass / distance);
+            
+            // Random angle for initial position (spread planets around)
+            let angle = std::f64::consts::PI * 2.0 * (i as f64) / planet_data.len() as f64;
+            
+            // Calculate position
+            let pos_x = angle.cos() * distance;
+            let pos_y = angle.sin() * distance;
+            
+            // Calculate velocity (perpendicular to radius)
+            let vel_x = -angle.sin() * orbital_speed;
+            let vel_y = angle.cos() * orbital_speed;
+            
+            bodies.push(Body {
+                id: (i + 2) as u32,
+                mass: *mass,
+                position: Vec2::new(pos_x, pos_y),
+                velocity: Vec2::new(vel_x, vel_y),
+                radius: *radius,
+                color: String::from(*color),
+            });
+        }
+        
+        // Create moons for the gas giant (planet 3)
+        // Use separate variables to avoid borrowing issues
+        let planet_id = 3; // Gas giant is id 3
+        let planet_index = 2; // Adjust for 0-based indexing (3rd body)
+        
+        // Create copies of the planet's properties to avoid borrow issues
+        let planet_mass: f64;
+        let planet_pos_x: f64;
+        let planet_pos_y: f64; 
+        let planet_vel_x: f64;
+        let planet_vel_y: f64;
+        
+        {
+            // Access the planet in a separate scope to avoid borrow issues
+            let planet = &bodies[planet_index];
+            planet_mass = planet.mass;
+            planet_pos_x = planet.position.x;
+            planet_pos_y = planet.position.y;
+            planet_vel_x = planet.velocity.x;
+            planet_vel_y = planet.velocity.y;
+        }
+        
+        // Moon data: (mass, distance from planet, radius, color)
+        let moon_data = [
+            (100.0, 35.0, 4.0, "#cccccc"),  // Bigger moon
+            (50.0, 25.0, 3.0, "#aaaaaa"),   // Smaller moon
+        ];
+        
+        for (i, (mass, distance, radius, color)) in moon_data.iter().enumerate() {
+            // Calculate orbital velocity for moon
+            let orbital_speed = f64::sqrt(g * planet_mass / distance);
+            
+            // Random angle for initial position
+            let angle = std::f64::consts::PI * (i as f64) / moon_data.len() as f64;
+            
+            // Calculate position (relative to planet)
+            let pos_x = planet_pos_x + angle.cos() * distance;
+            let pos_y = planet_pos_y + angle.sin() * distance;
+            
+            // Calculate velocity (perpendicular to radius, added to planet velocity)
+            let vel_x = planet_vel_x - angle.sin() * orbital_speed;
+            let vel_y = planet_vel_y + angle.cos() * orbital_speed;
+            
+            bodies.push(Body {
+                id: (bodies.len() + 1) as u32,
+                mass: *mass,
+                position: Vec2::new(pos_x, pos_y),
+                velocity: Vec2::new(vel_x, vel_y),
+                radius: *radius,
+                color: String::from(*color),
+            });
+        }
         
         Self {
-            bodies: vec![
-                // Body 1 - Star-like
-                Body {
-                    id: 1,
-                    mass: mass1,
-                    position: Vec2::new(pos1, 0.0),
-                    velocity: Vec2::new(0.0, -v1 * velocity_factor),
-                    radius: 20.0,
-                    color: String::from("#ffcc00"),
-                },
-                // Body 2 - Planet-like
-                Body {
-                    id: 2,
-                    mass: mass2,
-                    position: Vec2::new(pos2, 0.0),
-                    velocity: Vec2::new(0.0, v2 * velocity_factor),
-                    radius: 10.0,
-                    color: String::from("#3366ff"),
-                },
-            ],
+            bodies,
             time_step: 0.01,
             time_multiplier: 1.0, // Default speed
             gravity_constant: g,

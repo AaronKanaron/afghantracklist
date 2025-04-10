@@ -3,7 +3,7 @@
 :root {
   color: theme.t(text-primary);
   /* background-color: #f6f6f6;   */
-  overflow-x: hidden;
+  // overflow-x: hidden;
   margin: 0;
   height: 100%;
   padding: 0;
@@ -18,19 +18,117 @@ html, body, #root{
   height: 100%;
   width: 100%;
   margin: 0;
+  // overflow: hidden;
+  border-radius: 8px;
+
+
+  &::-webkit-scrollbar{
+    display: none;
+    width: 0;
+    height: 0;
+  }
 }
 
 .container{
   /* width: 100vw; */
   /* height: 100vh; */
   width: 100%;
-  height: 100%;
+  // height: 100%;
   margin: 0;
   background-color: theme.t(background-primary);
-  // overflow: hidden;
+  // overflow: scroll;
   border-radius: 8px;
+  &:after{
+    position: fixed;
+    content: "";
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    border: 1px solid theme.t(border-light);
+    box-sizing: border-box;
+    border-radius: 8px;
+    pointer-events: none;
+    z-index: 100;
+  }
 }   
 
 .content{
   margin-top: 32px;
+}
+
+.simulation-canvas {
+  flex: 1;
+  min-height: 0; /* Important for flex child to respect container height */
+}
+
+.controls-container {
+  padding: 10px;
+  max-height: 45vh; /* Limit controls height */
+  overflow-y: auto; /* Allow scrolling within controls if needed */
+}
+
+/* Improved styling for the body editor */
+.body-editor {
+  background-color: #333;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+  
+  h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-size: 18px;
+    font-weight: 500;
+    color: #fff;
+  }
+  
+  .form-row {
+    margin-bottom: 12px;
+    
+    label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #eee;
+      font-size: 14px;
+      
+      input {
+        margin-left: 12px;
+        width: 60%;
+        padding: 6px;
+        border-radius: 4px;
+        border: 1px solid #555;
+        background-color: #444;
+        color: #fff;
+        
+        &:focus {
+          outline: none;
+          border-color: #2196f3;
+        }
+        
+        &[type="color"] {
+          width: 60px;
+          height: 30px;
+          padding: 2px;
+        }
+      }
+    }
+  }
+  
+  .update-button {
+    width: 100%;
+    padding: 8px;
+    background-color: #2196f3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 10px;
+    
+    &:hover {
+      background-color: #1976d2;
+    }
+  }
 }

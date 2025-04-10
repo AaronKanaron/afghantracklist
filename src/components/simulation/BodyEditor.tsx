@@ -54,6 +54,7 @@ const BodyEditor: React.FC<BodyEditorProps> = ({ body, onUpdate }) => {
     // Update form when selected body changes
     useEffect(() => {
         if (body) {
+            console.log("Body editor received new body:", body);
             setFormState({
                 mass: body.mass,
                 radius: body.radius,
@@ -76,6 +77,7 @@ const BodyEditor: React.FC<BodyEditorProps> = ({ body, onUpdate }) => {
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
         e.preventDefault();
+        console.log("Submitting body update:", formState);
         onUpdate({
             mass: formState.mass,
             radius: formState.radius,
