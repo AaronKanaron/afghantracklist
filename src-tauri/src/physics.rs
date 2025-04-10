@@ -35,6 +35,7 @@ impl Vec2 {
 pub struct SimulationState {
     pub bodies: Vec<Body>,
     pub time_step: f64,
+    pub time_multiplier: f64,
     pub gravity_constant: f64,
     pub is_running: bool,
     pub elapsed_time: f64,
@@ -42,30 +43,52 @@ pub struct SimulationState {
 
 impl SimulationState {
     pub fn new() -> Self {
-        // Default setup with two bodies
+        // Setup a binary system with orbital velocities
+        // Using closer mass ratio to make both bodies orbit more visibly
+        let mass1 = 5.0e3;  // Reduced from 1.0e5
+        let mass2 = 1.0e3;  // Kept the same
+        let distance = 200.0;
+        
+        // Calculate positions to keep center of mass at origin
+        let total_mass = mass1 + mass2;
+        let pos1 = -distance * mass2 / total_mass;
+        let pos2 = distance * mass1 / total_mass;
+        
+        // Calculate orbital velocities
+        // For circular orbit: v = sqrt(G * M / r)
+        let g = 6.67430e-1; // Our simulation gravity constant
+        
+        // Use f64::sqrt() explicitly to avoid type ambiguity
+        let v1 = f64::sqrt(g * mass2 / distance) * mass2 / total_mass;
+        let v2 = f64::sqrt(g * mass1 / distance) * mass1 / total_mass;
+        
+        // Increase velocities slightly for more obvious orbits
+        let velocity_factor = 1.2;
+        
         Self {
             bodies: vec![
-                // Body 1 - Sun-like
+                // Body 1 - Star-like
                 Body {
                     id: 1,
-                    mass: 1.0e6,
-                    position: Vec2::new(0.0, 0.0),
-                    velocity: Vec2::new(0.0, 0.0),
-                    radius: 30.0,
+                    mass: mass1,
+                    position: Vec2::new(pos1, 0.0),
+                    velocity: Vec2::new(0.0, -v1 * velocity_factor),
+                    radius: 20.0,
                     color: String::from("#ffcc00"),
                 },
                 // Body 2 - Planet-like
                 Body {
                     id: 2,
-                    mass: 1.0e3,
-                    position: Vec2::new(200.0, 0.0),
-                    velocity: Vec2::new(0.0, 70.0),
+                    mass: mass2,
+                    position: Vec2::new(pos2, 0.0),
+                    velocity: Vec2::new(0.0, v2 * velocity_factor),
                     radius: 10.0,
                     color: String::from("#3366ff"),
                 },
             ],
             time_step: 0.01,
-            gravity_constant: 6.67430e-1, // Gravitational constant
+            time_multiplier: 1.0, // Default speed
+            gravity_constant: g,
             is_running: false,
             elapsed_time: 0.0,
         }
@@ -77,6 +100,9 @@ impl SimulationState {
             return;
         }
         
+        // Apply time multiplier to time step
+        let effective_time_step = self.time_step * self.time_multiplier;
+        
         // Calculate forces
         let forces = self.calculate_forces();
         
@@ -87,15 +113,15 @@ impl SimulationState {
             let acc_x = force.x / body.mass;
             let acc_y = force.y / body.mass;
             
-            body.velocity.x += acc_x * self.time_step;
-            body.velocity.y += acc_y * self.time_step;
+            body.velocity.x += acc_x * effective_time_step;
+            body.velocity.y += acc_y * effective_time_step;
             
             // Update position based on velocity
-            body.position.x += body.velocity.x * self.time_step;
-            body.position.y += body.velocity.y * self.time_step;
+            body.position.x += body.velocity.x * effective_time_step;
+            body.position.y += body.velocity.y * effective_time_step;
         }
         
-        self.elapsed_time += self.time_step;
+        self.elapsed_time += effective_time_step;
     }
     
     // Calculate gravitational forces between all bodies
@@ -169,6 +195,12 @@ pub fn step_simulation() -> SimulationState {
     let mut sim = SIMULATION.lock().unwrap();
     sim.step();
     sim.clone()
+}
+
+#[tauri::command]
+pub fn set_time_multiplier(multiplier: f64) {
+    let mut sim = SIMULATION.lock().unwrap();
+    sim.time_multiplier = multiplier;
 }
 
 #[tauri::command]

@@ -11,6 +11,7 @@ fn main() {
             physics::reset_simulation,
             physics::step_simulation,
             physics::update_body,
+            physics::set_time_multiplier,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
