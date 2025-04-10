@@ -1,0 +1,36 @@
+@use "../../../styles/theme" as theme;
+
+
+.window-controls{
+    display: flex;
+    height: 100%;
+    // width: 96px;
+    align-items: center;
+    // background: red;
+    // gap: 16px;
+
+    &__item{
+
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 46px;
+        height: 100%;
+
+        &:hover{
+            // background-color: #2d2d2d;
+            background-color: #FFFFFF0F;
+            cursor: pointer;
+
+            &.close {
+                background-color: theme.t(error-bg);
+                color: theme.t(error-text);
+            }
+        }
+
+        &+.item{
+            // border-left: 1px solid #fff;
+        }
+    }
+}

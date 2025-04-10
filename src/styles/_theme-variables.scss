@@ -1,0 +1,90 @@
+@use "sass:color";
+@use "sass:map";
+@use "colors" as c;
+
+$theme-light: (
+    background-primary: c.color(white),
+    background-secondary: c.color(neutral-50),
+    background-tertiary: c.color(neutral-100),
+    
+    // Text colors
+    text-primary: c.color(neutral-900),
+    text-secondary: c.color(neutral-700),
+    text-tertiary: c.color(neutral-500),
+    text-on-primary: c.color(white),
+    
+    // Border colors
+    border-light: c.color(neutral-200),
+    border-medium: c.color(neutral-300),
+    border-heavy: c.color(neutral-400),
+    
+    // Button colors
+    button-primary-bg: c.color(primary-500),
+    button-primary-text: c.color(white),
+    button-secondary-bg: c.color(neutral-100),
+    button-secondary-text: c.color(neutral-900),
+    
+    // Component specific colors
+    card-bg: c.color(white),
+    card-border: c.color(neutral-200),
+    input-bg: c.color(white),
+    input-border: c.color(neutral-300),
+    input-focus-border: c.color(primary-500),
+    
+    // Feedback colors
+    success-bg: color.adjust(c.color(success), $lightness: 45%),
+    success-text: color.adjust(c.color(success), $lightness: -10%),
+    warning-bg: color.adjust(c.color(warning), $lightness: 45%),
+    warning-text: color.adjust(c.color(warning), $lightness: -10%),
+    error-bg: color.adjust(c.color(error), $lightness: 45%),
+    error-text: color.adjust(c.color(error), $lightness: -10%),
+    info-bg: color.adjust(c.color(info), $lightness: 45%),
+    info-text: color.adjust(c.color(info), $lightness: -10%),
+);
+
+$theme-dark: (
+    // Background colors
+    background-primary: c.color(neutral-900),
+    background-secondary: c.color(neutral-800),
+    background-tertiary: c.color(neutral-700),
+    
+    // Text colors
+    text-primary: c.color(neutral-50),
+    text-secondary: c.color(neutral-300),
+    text-tertiary: c.color(neutral-400),
+    text-on-primary: c.color(white),
+    
+    // Border colors
+    border-light: c.color(neutral-700),
+    border-medium: c.color(neutral-600),
+    border-heavy: c.color(neutral-500),
+    
+    // Button colors
+    button-primary-bg: c.color(primary-600),
+    button-primary-text: c.color(white),
+    button-secondary-bg: c.color(neutral-700),
+    button-secondary-text: c.color(neutral-50),
+    
+    // Component specific colors
+    card-bg: c.color(neutral-800),
+    card-border: c.color(neutral-700),
+    input-bg: c.color(neutral-800),
+    input-border: c.color(neutral-600),
+    input-focus-border: c.color(primary-400),
+    
+    // Feedback colors
+    success-bg: rgba(c.color(success), 0.2),
+    success-text: color.adjust(c.color(success), $lightness: 10%),
+    warning-bg: rgba(c.color(warning), 0.2),
+    warning-text: color.adjust(c.color(warning), $lightness: 10%),
+    error-bg: rgba(c.color(error), 0.2),
+    error-text: color.adjust(c.color(error), $lightness: 10%),
+    info-bg: rgba(c.color(info), 0.2),
+    info-text: color.adjust(c.color(info), $lightness: 10%),
+);
+
+$theme: $theme-light !default;
+
+@function theme-color($color-name) {
+    @return map.get($theme, $color-name);
+}

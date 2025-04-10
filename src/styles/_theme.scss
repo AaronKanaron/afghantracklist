@@ -1,0 +1,29 @@
+@use "sass:color";
+@use "sass:map";
+@use "theme-variables" as theme-vars;
+
+@mixin generate-theme-vars($theme-map) {
+    @each $name, $value in $theme-map {
+        --color-#{$name}: #{$value};
+    }
+}
+
+:root {
+    @include generate-theme-vars(theme-vars.$theme-light);
+    
+    @media (prefers-color-scheme: dark) {
+        @include generate-theme-vars(theme-vars.$theme-dark);
+    }
+}
+
+.theme-light {
+    @include generate-theme-vars(theme-vars.$theme-light);
+}
+
+.theme-dark {
+    @include generate-theme-vars(theme-vars.$theme-dark);
+}
+
+@function t($color-name) {
+    @return var(--color-#{$color-name});
+}
