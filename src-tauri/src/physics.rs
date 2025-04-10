@@ -11,7 +11,6 @@ pub struct Body {
     pub color: String,
 }
 
-// Vector2 implementation for position and velocity
 #[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct Vec2 {
     pub x: f64,
@@ -30,7 +29,6 @@ impl Vec2 {
     }
 }
 
-// Simulation state
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SimulationState {
     pub bodies: Vec<Body>,
@@ -42,14 +40,13 @@ pub struct SimulationState {
 }
 
 impl SimulationState {
+    // Alla måste börja med en vel relativt till annat obj. ex. solen för planeter / planet för månar
     pub fn new() -> Self {
-        // Setup a system with multiple bodies
-        let g = 6.67430e-1; // Our simulation gravity constant
+        let g = 6.67430e-1; 
         
-        // Create a more complex solar system with multiple bodies
         let mut bodies = Vec::new();
         
-        // Star (central body)
+        // solen
         bodies.push(Body {
             id: 1,
             mass: 8.0e3,
@@ -59,33 +56,23 @@ impl SimulationState {
             color: String::from("#ffcc00"),
         });
         
-        // Store the sun's mass to avoid borrowing issues
         let sun_mass = 8.0e3;
         
-        // Add planets at different distances
         let planet_data = [
-            // Inner planet (like Mercury)
-            (1.0e3, 120.0, 10.0, "#ff9999"), 
-            // Medium planet (like Earth)
-            (1.5e3, 200.0, 12.0, "#3366ff"),
-            // Gas giant (like Jupiter)
-            (3.0e3, 350.0, 18.0, "#ff6600"),
-            // Outer planet (like Neptune)
-            (2.0e3, 450.0, 15.0, "#33ccff"),
+            (1.0e3, 120.0, 10.0, "#ff9999"), //planet 1
+            (1.5e3, 200.0, 12.0, "#3366ff"), //planet 2
+            (3.0e3, 350.0, 18.0, "#ff6600"), //planet 3
+            (2.0e3, 450.0, 15.0, "#33ccff"), //planet 4
         ];
         
         for (i, (mass, distance, radius, color)) in planet_data.iter().enumerate() {
-            // Calculate orbital velocity for a circular orbit: v = sqrt(G * M / r)
             let orbital_speed = f64::sqrt(g * sun_mass / distance);
             
-            // Random angle for initial position (spread planets around)
             let angle = std::f64::consts::PI * 2.0 * (i as f64) / planet_data.len() as f64;
             
-            // Calculate position
             let pos_x = angle.cos() * distance;
             let pos_y = angle.sin() * distance;
             
-            // Calculate velocity (perpendicular to radius)
             let vel_x = -angle.sin() * orbital_speed;
             let vel_y = angle.cos() * orbital_speed;
             
@@ -99,12 +86,9 @@ impl SimulationState {
             });
         }
         
-        // Create moons for the gas giant (planet 3)
-        // Use separate variables to avoid borrowing issues
-        let planet_id = 3; // Gas giant is id 3
-        let planet_index = 2; // Adjust for 0-based indexing (3rd body)
+        // Skapa månar för planet 3
+        let planet_index = 2;
         
-        // Create copies of the planet's properties to avoid borrow issues
         let planet_mass: f64;
         let planet_pos_x: f64;
         let planet_pos_y: f64; 
@@ -112,7 +96,6 @@ impl SimulationState {
         let planet_vel_y: f64;
         
         {
-            // Access the planet in a separate scope to avoid borrow issues
             let planet = &bodies[planet_index];
             planet_mass = planet.mass;
             planet_pos_x = planet.position.x;
@@ -121,24 +104,19 @@ impl SimulationState {
             planet_vel_y = planet.velocity.y;
         }
         
-        // Moon data: (mass, distance from planet, radius, color)
         let moon_data = [
-            (100.0, 35.0, 4.0, "#cccccc"),  // Bigger moon
-            (50.0, 25.0, 3.0, "#aaaaaa"),   // Smaller moon
+            (100.0, 35.0, 4.0, "#cccccc"), //Bigger moon
+            (50.0, 25.0, 3.0, "#aaaaaa"), //Smaller moon
         ];
         
         for (i, (mass, distance, radius, color)) in moon_data.iter().enumerate() {
-            // Calculate orbital velocity for moon
             let orbital_speed = f64::sqrt(g * planet_mass / distance);
             
-            // Random angle for initial position
             let angle = std::f64::consts::PI * (i as f64) / moon_data.len() as f64;
             
-            // Calculate position (relative to planet)
             let pos_x = planet_pos_x + angle.cos() * distance;
             let pos_y = planet_pos_y + angle.sin() * distance;
             
-            // Calculate velocity (perpendicular to radius, added to planet velocity)
             let vel_x = planet_vel_x - angle.sin() * orbital_speed;
             let vel_y = planet_vel_y + angle.cos() * orbital_speed;
             
@@ -155,28 +133,23 @@ impl SimulationState {
         Self {
             bodies,
             time_step: 0.01,
-            time_multiplier: 1.0, // Default speed
+            time_multiplier: 1.0,
             gravity_constant: g,
             is_running: false,
             elapsed_time: 0.0,
         }
     }
     
-    // Step the simulation forward by one time step
     pub fn step(&mut self) {
         if !self.is_running {
             return;
         }
         
-        // Apply time multiplier to time step
         let effective_time_step = self.time_step * self.time_multiplier;
         
-        // Calculate forces
         let forces = self.calculate_forces();
         
-        // Update velocities and positions
         for (i, body) in self.bodies.iter_mut().enumerate() {
-            // Update velocity based on force and mass (F = ma, so a = F/m)
             let force = &forces[i];
             let acc_x = force.x / body.mass;
             let acc_y = force.y / body.mass;
@@ -184,64 +157,129 @@ impl SimulationState {
             body.velocity.x += acc_x * effective_time_step;
             body.velocity.y += acc_y * effective_time_step;
             
-            // Update position based on velocity
             body.position.x += body.velocity.x * effective_time_step;
             body.position.y += body.velocity.y * effective_time_step;
         }
         
+        // self.handle_collisions();
+        
         self.elapsed_time += effective_time_step;
     }
     
-    // Calculate gravitational forces between all bodies
-    fn calculate_forces(&self) -> Vec<Vec2> {
-        let mut forces = vec![Vec2::new(0.0, 0.0); self.bodies.len()];
+    fn handle_collisions(&mut self) {
+        let mut collision_data = Vec::new();
         
-        // For each pair of bodies, calculate the gravitational force
         for i in 0..self.bodies.len() {
             for j in (i+1)..self.bodies.len() {
                 let body1 = &self.bodies[i];
                 let body2 = &self.bodies[j];
                 
-                // Calculate distance between bodies
+                let distance = body1.position.distance(&body2.position);
+                
+                if distance < body1.radius + body2.radius {
+                    let dx = body2.position.x - body1.position.x;
+                    let dy = body2.position.y - body1.position.y;
+                    let inv_dist = 1.0 / distance.max(0.001);
+                    let nx = dx * inv_dist;
+                    let ny = dy * inv_dist;
+                    
+                    let dvx = body2.velocity.x - body1.velocity.x;
+                    let dvy = body2.velocity.y - body1.velocity.y;
+                    let relative_vel_dot_normal = dvx * nx + dvy * ny;
+                    
+                    if relative_vel_dot_normal < 0.0 {
+                        let restitution = 0.7;
+                        let inv_mass1 = 1.0 / body1.mass;
+                        let inv_mass2 = 1.0 / body2.mass;
+                        let impulse_scalar = -(1.0 + restitution) * relative_vel_dot_normal /
+                                            (inv_mass1 + inv_mass2);
+                        
+                        let impulse_x = impulse_scalar * nx;
+                        let impulse_y = impulse_scalar * ny;
+                        
+                        let vel_change_i = Vec2::new(
+                            -impulse_x * inv_mass1,
+                            -impulse_y * inv_mass1
+                        );
+                        
+                        let vel_change_j = Vec2::new(
+                            impulse_x * inv_mass2,
+                            impulse_y * inv_mass2
+                        );
+                        
+                        let penetration = (body1.radius + body2.radius) - distance;
+                        let percent = 0.4; 
+                        let correction_x = nx * penetration * percent;
+                        let correction_y = ny * penetration * percent;
+                        
+                        let pos_corr_i = Vec2::new(
+                            -correction_x * inv_mass1 / (inv_mass1 + inv_mass2),
+                            -correction_y * inv_mass1 / (inv_mass1 + inv_mass2)
+                        );
+                        
+                        let pos_corr_j = Vec2::new(
+                            correction_x * inv_mass2 / (inv_mass1 + inv_mass2),
+                            correction_y * inv_mass2 / (inv_mass1 + inv_mass2)
+                        );
+                        
+                        collision_data.push((i, j, vel_change_i, vel_change_j, pos_corr_i, pos_corr_j));
+                    }
+                }
+            }
+        }
+        
+        for (i, j, vel_i, vel_j, pos_i, pos_j) in collision_data {
+            self.bodies[i].velocity.x += vel_i.x;
+            self.bodies[i].velocity.y += vel_i.y;
+            self.bodies[j].velocity.x += vel_j.x;
+            self.bodies[j].velocity.y += vel_j.y;
+            
+            // Apply position corrections
+            self.bodies[i].position.x += pos_i.x;
+            self.bodies[i].position.y += pos_i.y;
+            self.bodies[j].position.x += pos_j.x;
+            self.bodies[j].position.y += pos_j.y;
+        }
+    }
+    
+    fn calculate_forces(&self) -> Vec<Vec2> {
+        let mut forces = vec![Vec2::new(0.0, 0.0); self.bodies.len()];
+        
+        for i in 0..self.bodies.len() {
+            for j in (i+1)..self.bodies.len() {
+                let body1 = &self.bodies[i];
+                let body2 = &self.bodies[j];
+                
                 let dist = body1.position.distance(&body2.position);
                 
-                // Avoid division by zero or extremely small values
-                if dist < 0.1 {
-                    continue;
-                }
+                let min_dist = (body1.radius + body2.radius) * 0.8;
+                let clamped_dist = dist.max(min_dist);
                 
-                // Calculate gravitational force magnitude: F = G * (m1 * m2) / r^2
-                let force_magnitude = self.gravity_constant * body1.mass * body2.mass / (dist * dist);
+                let force_magnitude = self.gravity_constant * body1.mass * body2.mass / (clamped_dist * clamped_dist);
                 
-                // Calculate direction components
                 let dx = body2.position.x - body1.position.x;
                 let dy = body2.position.y - body1.position.y;
                 
-                // Force components in x and y directions
                 let force_x = force_magnitude * dx / dist;
                 let force_y = force_magnitude * dy / dist;
                 
-                // Apply to body1 (force directed towards body2)
                 forces[i].x += force_x;
                 forces[i].y += force_y;
                 
-                // Apply equal and opposite force to body2
                 forces[j].x -= force_x;
                 forces[j].y -= force_y;
             }
         }
-        
         forces
     }
 }
 
 
-// Create a global simulation state
 lazy_static::lazy_static! {
     static ref SIMULATION: Arc<Mutex<SimulationState>> = Arc::new(Mutex::new(SimulationState::new()));
 }
 
-// Tauri commands
+//Tauri commands
 #[tauri::command]
 pub fn get_simulation_state() -> SimulationState {
     SIMULATION.lock().unwrap().clone()

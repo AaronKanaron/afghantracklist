@@ -8,145 +8,144 @@
     color: #fff;
     
     h3 {
-      margin-top: 0;
-      margin-bottom: 16px;
-      font-size: 18px;
-      font-weight: 500;
+        margin-top: 0;
+        margin-bottom: 16px;
+        font-size: 18px;
+        font-weight: 500;
     }
     
     h4 {
-      margin-top: 16px;
-      margin-bottom: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      color: #ccc;
+        margin-top: 16px;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #ccc;
     }
     
     .control-row {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
     }
     
     .control-button {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 500;
-      transition: background-color 0.2s;
-      
-      &.start {
-        background-color: #4caf50;
-        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background-color 0.2s;
         
-        &:hover {
-          background-color: #3d8b40;
+        &.start {
+            background-color: #4caf50;
+            color: white;
+            
+            &:hover {
+            background-color: #3d8b40;
+            }
         }
-      }
-      
-      &.stop {
-        background-color: #f44336;
-        color: white;
         
-        &:hover {
-          background-color: #d32f2f;
-        }
-      }
-      
-      &.reset {
-        background-color: #2196f3;
-        color: white;
+        &.stop {
+            background-color: #f44336;
+            color: white;
         
-        &:hover {
-          background-color: #1976d2;
+            &:hover {
+                background-color: #d32f2f;
+            }
         }
-      }
+    
+        &.reset {
+            background-color: #2196f3;
+            color: white;
+            
+            &:hover {
+                background-color: #1976d2;
+            }
+        }
     }
     
     .simulation-stats {
-      margin-bottom: 16px;
-      
-      .stat {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 8px;
-        font-size: 14px;
-        
-        span:first-child {
-          color: #aaa;
+        margin-bottom: 16px;
+
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+            
+            span:first-child {
+                color: #aaa;
+            }
         }
-      }
     }
     
     .speed-control {
-      margin-top: 16px;
-      
-      .speed-slider {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 12px;
+        margin-top: 16px;
         
-        input[type="range"] {
-          flex: 1;
-          -webkit-appearance: none;
-          height: 4px;
-          background: #555;
-          border-radius: 2px;
-          outline: none;
-          
-          &::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #2196f3;
-            cursor: pointer;
-          }
-          
-          &::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #2196f3;
-            cursor: pointer;
-          }
-        }
+        .speed-slider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            
+            input[type="range"] {
+                flex: 1;
+                height: 4px;
+                background: #555;
+                border-radius: 2px;
+                outline: none;
+            
+                &::-webkit-slider-thumb {
+                    -webkit-appearance: none;
+                    width: 16px;
+                    height: 16px;
+                    border-radius: 50%;
+                    background: #2196f3;
+                    cursor: pointer;
+                }
+                
+                &::-moz-range-thumb {
+                    width: 16px;
+                    height: 16px;
+                    border-radius: 50%;
+                    background: #2196f3;
+                    cursor: pointer;
+                }
+            }
         
-        span {
-          width: 40px;
-          text-align: right;
-          font-size: 14px;
-          font-weight: 500;
+            span {
+            width: 40px;
+            text-align: right;
+            font-size: 14px;
+            font-weight: 500;
+            }
         }
-      }
-      
-      .speed-presets {
-        display: flex;
-        gap: 6px;
+    
+        .speed-presets {
+            display: flex;
+            gap: 6px;
         
-        .speed-preset {
-          padding: 4px 8px;
-          border-radius: 4px;
-          border: 1px solid #555;
-          background: transparent;
-          color: #aaa;
-          cursor: pointer;
-          font-size: 12px;
-          transition: all 0.2s;
-          
-          &:hover {
-            border-color: #2196f3;
-            color: #fff;
-          }
-          
-          &.active {
-            background-color: #2196f3;
-            border-color: #2196f3;
-            color: white;
-          }
+            .speed-preset {
+                padding: 4px 8px;
+                border-radius: 4px;
+                border: 1px solid #555;
+                background: transparent;
+                color: #aaa;
+                cursor: pointer;
+                font-size: 12px;
+                transition: all 0.2s;
+            
+                &:hover {
+                    border-color: #2196f3;
+                    color: #fff;
+                }
+                
+                &.active {
+                    background-color: #2196f3;
+                    border-color: #2196f3;
+                    color: white;
+                }
+            }
         }
-      }
     }
-  }
+}

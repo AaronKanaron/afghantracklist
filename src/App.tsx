@@ -46,7 +46,6 @@ function App(): JSX.Element {
   const isUpdating = useRef<boolean>(false);
   const manuallyUpdated = useRef<boolean>(false);
 
-  // Initialize simulation
   useEffect(() => {
     async function initializeSimulation(): Promise<void> {
       const state = await invoke<SimulationState>("get_simulation_state");
@@ -62,12 +61,10 @@ function App(): JSX.Element {
     };
   }, []);
 
-  // Optimized animation loop with frame rate limiting
   useEffect(() => {
     if (!simState) return;
 
     const runSimulation = async (timestamp: number): Promise<void> => {
-      // Limit updates to 60 FPS (approx 16.7ms between frames)
       const frameInterval = 16.7; 
       const elapsed = timestamp - lastUpdateTime.current;
 
@@ -75,7 +72,6 @@ function App(): JSX.Element {
         isUpdating.current = true;
         
         try {
-          // Step the simulation in the backend
           const updatedState = await invoke<SimulationState>("step_simulation");
           setSimState(updatedState);
           lastUpdateTime.current = timestamp;
@@ -96,20 +92,17 @@ function App(): JSX.Element {
         cancelAnimationFrame(animationFrameId.current);
       }
     };
-  }, [simState?.is_running]); // Only depend on is_running to prevent unnecessary re-renders
+  }, [simState?.is_running]);
 
   const toggleSimulation = async (): Promise<void> => {
     if (!simState) return;
     
     try {
       await invoke('set_simulation_running', { running: !simState.is_running });
-      // After pausing, make sure we have the correct state in memory
       if (simState.is_running) {
-        // If we're pausing, get the latest state
         const state = await invoke<SimulationState>('get_simulation_state');
         setSimState(state);
       } else {
-        // If we're starting, just update the is_running flag
         setSimState(prev => prev ? { ...prev, is_running: !prev.is_running } : null);
       }
     } catch (error) {
@@ -136,14 +129,12 @@ function App(): JSX.Element {
     if (!simState) return;
     
     try {
-      // First ensure the simulation is paused
       if (simState.is_running) {
         await invoke('set_simulation_running', { running: false });
       }
 
       console.log("Updating body with ID:", id, "Updates:", updates);
       
-      // Now update the body
       await invoke('update_body', {
         id,
         mass: updates.mass,
@@ -157,13 +148,11 @@ function App(): JSX.Element {
       
       manuallyUpdated.current = true;
       
-      // Get the fresh state (which should include our updates)
       const state = await invoke<SimulationState>('get_simulation_state');
       
-      // Apply the updated state to our React state
       setSimState({
         ...state,
-        is_running: false // Ensure it stays paused
+        is_running: false
       });
       
       console.log("Body updated successfully");

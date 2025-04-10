@@ -17,21 +17,17 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 }) => {
     const [speedMultiplier, setSpeedMultiplier] = useState<number>(1);
     
-    // Set initial speed multiplier when component mounts
     useEffect(() => {
-        // Set the default multiplier when the component first loads
         invoke('set_time_multiplier', { multiplier: 1.0 })
             .then(() => console.log('Initial time multiplier set to 1.0'))
             .catch(err => console.error('Error setting initial time multiplier:', err));
     }, []);
     
-    // Handle speed multiplier change
     const handleSpeedChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = parseFloat(e.target.value);
         setSpeedMultiplier(value);
         
         try {
-            // Update the time multiplier in the backend
             await invoke('set_time_multiplier', { multiplier: value });
             console.log('Time multiplier set to:', value);
         } catch (error) {
@@ -46,10 +42,9 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         { label: '2x', value: 2 },
         { label: '5x', value: 5 },
         { label: '10x', value: 10 },
-        { label: '50x', value: 50 } // Added 50x option
+        { label: '50x', value: 50 } 
     ];
     
-    // Apply a preset speed
     const applySpeedPreset = async (value: number) => {
         setSpeedMultiplier(value);
         
@@ -99,7 +94,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                     <input
                         type="range"
                         min="0.1"
-                        max="50" // Increased max value to support 50x
+                        max="50"
                         step="0.1"
                         value={speedMultiplier}
                         onChange={handleSpeedChange}

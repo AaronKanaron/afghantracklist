@@ -51,7 +51,6 @@ const BodyEditor: React.FC<BodyEditorProps> = ({ body, onUpdate }) => {
         color: "#ffffff",
     });
 
-    // Update form when selected body changes
     useEffect(() => {
         if (body) {
             console.log("Body editor received new body:", body);
